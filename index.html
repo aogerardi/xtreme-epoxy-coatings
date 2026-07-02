@@ -712,18 +712,24 @@ function finish(type, fields, trackerCols){
   const sum = document.getElementById('summary');
   sum.innerHTML = fields.filter(f => f[1]).map(f => '<div><span>'+f[0]+'</span><span>'+String(f[1]).replace(/</g,'&lt;')+'</span></div>').join('');
   document.getElementById('succTitle').textContent = type === 'Quote request' ? 'Quote request ready' : 'Appointment request ready';
-  // mailto
+  // build mailto backup
   const subject = type + ' — ' + (fields.find(f => f[0]==='Service')?.[1] || '') + ' (' + (fields.find(f => f[0]==='Name')?.[1] || '') + ')';
   const body = 'New ' + type.toLowerCase() + ' from the website:\n\n' +
     fields.filter(f => f[1]).map(f => f[0] + ': ' + f[1]).join('\n') +
-    '\n\n--- TRACKER ROW (copy the line below, click cell A of a new row in the Command Center → Leads tab, paste) ---\n' +
-    trackerCols.join('\t');
+    '\n\n--- TRACKER ROW ---\n' + trackerCols.join('\t');
   lastMail = 'mailto:' + TO + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
   lastRow = trackerCols.join('\t');
+  // POST to Formspree
+  const payload = { _subject: subject };
+  fields.filter(f => f[1]).forEach(f => { payload[f[0]] = f[1]; });
+  fetch('https://formspree.io/f/xkolpzvq', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify(payload)
+  }).catch(() => {});
   paneQ.classList.remove('on'); paneB.classList.remove('on');
   succ.classList.add('on');
   succ.scrollIntoView({behavior:'smooth', block:'center'});
-  window.location.href = lastMail;
 }
 document.getElementById('mailAgain').onclick = () => { if(lastMail) window.location.href = lastMail; };
 document.getElementById('copyBtn').onclick = async () => {
